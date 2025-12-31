@@ -10,7 +10,8 @@ import {
   History,
   CheckCircle,
   AlertCircle,
-  FlaskConical
+  FlaskConical,
+  Loader2
 } from 'lucide-react';
 import { Client, ClientType, Appointment } from '../types';
 import { storageService } from '../services/storageService';
@@ -23,6 +24,7 @@ interface ClientPortalProps {
 const ClientPortal: React.FC<ClientPortalProps> = ({ onBack }) => {
   const [view, setView] = useState<'login' | 'register' | 'dashboard' | 'new-booking'>('login');
   const [currentUser, setCurrentUser] = useState<Client | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   
   // Login State
   const [loginCpf, setLoginCpf] = useState('');
@@ -37,15 +39,31 @@ const ClientPortal: React.FC<ClientPortalProps> = ({ onBack }) => {
 
   // Dashboard Data
   const [myAppointments, setMyAppointments] = useState<Appointment[]>([]);
+  const [servicesRef, setServicesRef] = useState<any[]>([]);
+  const [prosRef, setProsRef] = useState<any[]>([]);
 
   // Load appointments when entering dashboard
   useEffect(() => {
-    if (view === 'dashboard' && currentUser) {
-      const appts = storageService.getAppointmentsByCpf(currentUser.cpf);
-      // Sort by date (newest first)
-      appts.sort((a, b) => new Date(b.date + 'T' + b.time).getTime() - new Date(a.date + 'T' + a.time).getTime());
-      setMyAppointments(appts);
-    }
+    const fetchDashboardData = async () => {
+      if (view === 'dashboard' && currentUser) {
+        setIsLoading(true);
+        // Fetch reference data and appointments in parallel
+        const [appts, services, pros] = await Promise.all([
+          storageService.getAppointmentsByCpf(currentUser.cpf),
+          storageService.getServices(),
+          storageService.getProfessionals()
+        ]);
+
+        // Sort by date (newest first)
+        appts.sort((a, b) => new Date(b.date + 'T' + b.time).getTime() - new Date(a.date + 'T' + a.time).getTime());
+        setMyAppointments(appts);
+        setServicesRef(services);
+        setProsRef(pros);
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
   }, [view, currentUser]);
 
   const formatCPF = (value: string) => {
@@ -92,7 +110,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({ onBack }) => {
     }
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Backdoor for testing
@@ -113,7 +131,10 @@ const ClientPortal: React.FC<ClientPortalProps> = ({ onBack }) => {
 
     if (cpfError) return;
     
-    const client = storageService.getClientByCpf(loginCpf);
+    setIsLoading(true);
+    const client = await storageService.getClientByCpf(loginCpf);
+    setIsLoading(false);
+
     if (client) {
       setCurrentUser(client);
       setView('dashboard');
@@ -128,10 +149,11 @@ const ClientPortal: React.FC<ClientPortalProps> = ({ onBack }) => {
     }
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (regCpfError) return;
 
+    setIsLoading(true);
     const newClient: Client = {
       id: crypto.randomUUID(),
       name: regName,
@@ -141,7 +163,9 @@ const ClientPortal: React.FC<ClientPortalProps> = ({ onBack }) => {
       joinedAt: new Date().toISOString()
     };
 
-    const success = storageService.addClient(newClient);
+    const success = await storageService.addClient(newClient);
+    setIsLoading(false);
+
     if (success) {
       setCurrentUser(newClient);
       setView('dashboard');
@@ -221,8 +245,12 @@ const ClientPortal: React.FC<ClientPortalProps> = ({ onBack }) => {
                  </div>
                  {cpfError && <p className="text-red-500 text-xs mt-1 ml-1">{cpfError}</p>}
                </div>
-               <button type="submit" className="w-full bg-barber-gold hover:bg-barber-goldhover text-black font-bold py-3 rounded-lg transition-colors">
-                 Entrar
+               <button 
+                type="submit" 
+                disabled={isLoading}
+                className="w-full bg-barber-gold hover:bg-barber-goldhover text-black font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+               >
+                 {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Entrar'}
                </button>
                
                <button 
@@ -332,8 +360,12 @@ const ClientPortal: React.FC<ClientPortalProps> = ({ onBack }) => {
                  </div>
                </div>
 
-               <button type="submit" className="w-full bg-barber-gold hover:bg-barber-goldhover text-black font-bold py-3 rounded-lg transition-colors mt-4">
-                 Finalizar Cadastro
+               <button 
+                type="submit" 
+                disabled={isLoading}
+                className="w-full bg-barber-gold hover:bg-barber-goldhover text-black font-bold py-3 rounded-lg transition-colors mt-4 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+               >
+                 {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Finalizar Cadastro'}
                </button>
                <button 
                   type="button" 
@@ -409,18 +441,22 @@ const ClientPortal: React.FC<ClientPortalProps> = ({ onBack }) => {
                  </h3>
                  
                  <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
-                   {myAppointments.length === 0 ? (
+                    {isLoading ? (
+                      <div className="flex justify-center py-4">
+                        <Loader2 className="w-6 h-6 text-barber-gold animate-spin" />
+                      </div>
+                    ) : myAppointments.length === 0 ? (
                      <p className="text-zinc-500 text-center py-8">Nenhum agendamento encontrado.</p>
                    ) : (
                      myAppointments.map(appt => (
                        <div key={appt.id} className="bg-zinc-950 p-4 rounded-lg border border-zinc-800 flex justify-between items-center">
                          <div>
-                            <p className="text-white font-medium">{storageService.getServices().find(s => s.id === appt.serviceId)?.name}</p>
+                            <p className="text-white font-medium">{servicesRef.find(s => s.id === appt.serviceId)?.name || 'Serviço'}</p>
                             <p className="text-zinc-400 text-xs mt-1 flex items-center gap-2">
                               <Calendar className="w-3 h-3" /> {appt.date}
                               <Clock className="w-3 h-3" /> {appt.time}
                             </p>
-                            <p className="text-zinc-500 text-xs mt-1">Prof: {storageService.getProfessionals().find(p => p.id === appt.professionalId)?.name}</p>
+                            <p className="text-zinc-500 text-xs mt-1">Prof: {prosRef.find(p => p.id === appt.professionalId)?.name || 'Barbeiro'}</p>
                          </div>
                          <span className={`px-2 py-1 rounded text-xs font-bold capitalize ${getStatusColor(appt.status)}`}>
                            {appt.status}

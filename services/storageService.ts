@@ -1,17 +1,14 @@
 import { Service, Professional, Appointment, Client, Product, Expense } from '../types';
 
 /**
- * DATABASE ABSTRACTION LAYER
+ * DATABASE ABSTRACTION LAYER (Async Ready)
  * ------------------------------------------------------------------
- * Atualmente, este serviço usa 'localStorage' para persistência no navegador.
- * Para preparar o sistema para hospedagem e banco de dados real (SQL/NoSQL):
+ * Este serviço agora simula uma API assíncrona baseada em Promises.
+ * Isso prepara o sistema para conectar com qualquer banco (Firebase, Supabase, Postgres).
  * 
- * 1. Mantenha os nomes das funções (ex: getServices, saveServices).
- * 2. Substitua o conteúdo interno de localStorage por chamadas de API (fetch/axios).
- *    Exemplo: 
- *    getServices: async () => { const res = await fetch('/api/services'); return res.json(); }
- * 
- * Isso garante que o frontend (React) funcione independente do backend escolhido.
+ * Para migrar para um banco real:
+ * 1. Mantenha as assinaturas das funções (ex: async getServices(): Promise<Service[]>).
+ * 2. Substitua o conteúdo 'localStorage' por 'fetch' ou chamadas de SDK do banco.
  */
 
 const KEYS = {
@@ -23,6 +20,9 @@ const KEYS = {
   PRODUCTS: 'barberpro_products',
   EXPENSES: 'barberpro_expenses',
 };
+
+// Simula delay de rede (300ms) para parecer uma API real
+const delay = (ms = 300) => new Promise(resolve => setTimeout(resolve, ms));
 
 const DEFAULT_SERVICES: Service[] = [
   {
@@ -67,87 +67,101 @@ const DEFAULT_PROFESSIONALS: Professional[] = [
 
 export const storageService = {
   // Services
-  getServices: (): Service[] => {
+  getServices: async (): Promise<Service[]> => {
+    await delay();
     const data = localStorage.getItem(KEYS.SERVICES);
     return data ? JSON.parse(data) : DEFAULT_SERVICES;
   },
-  saveServices: (services: Service[]) => {
+  saveServices: async (services: Service[]): Promise<void> => {
+    await delay();
     localStorage.setItem(KEYS.SERVICES, JSON.stringify(services));
   },
 
   // Professionals
-  getProfessionals: (): Professional[] => {
+  getProfessionals: async (): Promise<Professional[]> => {
+    await delay();
     const data = localStorage.getItem(KEYS.PROFESSIONALS);
     return data ? JSON.parse(data) : DEFAULT_PROFESSIONALS;
   },
-  saveProfessionals: (pros: Professional[]) => {
+  saveProfessionals: async (pros: Professional[]): Promise<void> => {
+    await delay();
     localStorage.setItem(KEYS.PROFESSIONALS, JSON.stringify(pros));
   },
 
   // Appointments
-  getAppointments: (): Appointment[] => {
+  getAppointments: async (): Promise<Appointment[]> => {
+    await delay();
     const data = localStorage.getItem(KEYS.APPOINTMENTS);
     return data ? JSON.parse(data) : [];
   },
-  saveAppointments: (appointments: Appointment[]) => {
+  saveAppointments: async (appointments: Appointment[]): Promise<void> => {
+    await delay();
     localStorage.setItem(KEYS.APPOINTMENTS, JSON.stringify(appointments));
   },
-  addAppointment: (appt: Appointment) => {
-    const current = storageService.getAppointments();
-    storageService.saveAppointments([...current, appt]);
+  addAppointment: async (appt: Appointment): Promise<void> => {
+    const current = await storageService.getAppointments();
+    await storageService.saveAppointments([...current, appt]);
   },
-  getAppointmentsByCpf: (cpf: string): Appointment[] => {
-    const all = storageService.getAppointments();
+  getAppointmentsByCpf: async (cpf: string): Promise<Appointment[]> => {
+    const all = await storageService.getAppointments();
     return all.filter(appt => appt.clientCpf === cpf);
   },
 
   // Logo
-  getLogo: (): string | null => {
+  getLogo: async (): Promise<string | null> => {
+    await delay(100); // Logo loads faster
     return localStorage.getItem(KEYS.LOGO);
   },
-  saveLogo: (base64Image: string) => {
+  saveLogo: async (base64Image: string): Promise<void> => {
+    await delay();
     localStorage.setItem(KEYS.LOGO, base64Image);
   },
 
   // Clients
-  getClients: (): Client[] => {
+  getClients: async (): Promise<Client[]> => {
+    await delay();
     const data = localStorage.getItem(KEYS.CLIENTS);
     return data ? JSON.parse(data) : [];
   },
-  saveClients: (clients: Client[]) => {
+  saveClients: async (clients: Client[]): Promise<void> => {
+    await delay();
     localStorage.setItem(KEYS.CLIENTS, JSON.stringify(clients));
   },
-  addClient: (client: Client) => {
-    const current = storageService.getClients();
+  addClient: async (client: Client): Promise<boolean> => {
+    const current = await storageService.getClients();
     // Simple dedupe check by CPF
     if (current.some(c => c.cpf === client.cpf)) return false;
-    storageService.saveClients([...current, client]);
+    await storageService.saveClients([...current, client]);
     return true;
   },
-  getClientByCpf: (cpf: string): Client | undefined => {
-    const clients = storageService.getClients();
+  getClientByCpf: async (cpf: string): Promise<Client | undefined> => {
+    const clients = await storageService.getClients();
     return clients.find(c => c.cpf === cpf);
   },
 
   // Products
-  getProducts: (): Product[] => {
+  getProducts: async (): Promise<Product[]> => {
+    await delay();
     const data = localStorage.getItem(KEYS.PRODUCTS);
     return data ? JSON.parse(data) : [];
   },
-  saveProducts: (products: Product[]) => {
+  saveProducts: async (products: Product[]): Promise<void> => {
+    await delay();
     localStorage.setItem(KEYS.PRODUCTS, JSON.stringify(products));
   },
 
   // Expenses (Financial)
-  getExpenses: (): Expense[] => {
+  getExpenses: async (): Promise<Expense[]> => {
+    await delay();
     const data = localStorage.getItem(KEYS.EXPENSES);
     return data ? JSON.parse(data) : [];
   },
-  saveExpenses: (expenses: Expense[]) => {
+  saveExpenses: async (expenses: Expense[]): Promise<void> => {
+    await delay();
     localStorage.setItem(KEYS.EXPENSES, JSON.stringify(expenses));
   },
-  addExpense: (expense: Expense) => {
-    const current = storageService.getExpenses();
-    storageService.saveExpenses([...current, expense]);
+  addExpense: async (expense: Expense): Promise<void> => {
+    const current = await storageService.getExpenses();
+    await storageService.saveExpenses([...current, expense]);
   }
 };

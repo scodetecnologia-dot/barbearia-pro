@@ -38,6 +38,8 @@ const COLORS = ['#d4af37', '#a18323', '#7a6112', '#f3d97f', '#4a3b0b', '#8c701c'
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
+  
+  // Data States
   const [services, setServices] = useState<Service[]>([]);
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -45,6 +47,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
   const [clients, setClients] = useState<Client[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [currentLogo, setCurrentLogo] = useState<string | null>(null);
+
+  // Loading States
+  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(true);
 
   // Filter State
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -55,9 +61,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
   const [newPro, setNewPro] = useState<Partial<Professional>>({ name: '', specialty: '', bio: '', avatarUrl: '' });
   const [newProduct, setNewProduct] = useState<Partial<Product>>({ name: '', price: 0, stock: 0, description: '' });
   const [newExpense, setNewExpense] = useState<Partial<Expense>>({ description: '', amount: 0, category: 'outros', date: new Date().toISOString().split('T')[0] });
-  
-  // Analytics Loading State
-  const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(true);
   
   // Branding State
   const [logoPrompt, setLogoPrompt] = useState('Logo minimalista e luxuoso para barbearia "BarberPro Elite", ícone de tesoura e navalha estilizados, cores dourado e preto, estilo vetorial, alta qualidade, fundo escuro.');
@@ -73,20 +76,34 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 
   useEffect(() => {
     loadData();
-    const timer = setTimeout(() => {
-      setIsLoadingAnalytics(false);
-    }, 1000);
-    return () => clearTimeout(timer);
   }, []);
 
-  const loadData = () => {
-    setServices(storageService.getServices());
-    setProfessionals(storageService.getProfessionals());
-    setAppointments(storageService.getAppointments());
-    setProducts(storageService.getProducts());
-    setClients(storageService.getClients());
-    setExpenses(storageService.getExpenses());
-    setCurrentLogo(storageService.getLogo());
+  const loadData = async () => {
+    setIsLoadingData(true);
+    try {
+      const [s, p, a, prod, c, e, logo] = await Promise.all([
+        storageService.getServices(),
+        storageService.getProfessionals(),
+        storageService.getAppointments(),
+        storageService.getProducts(),
+        storageService.getClients(),
+        storageService.getExpenses(),
+        storageService.getLogo()
+      ]);
+
+      setServices(s);
+      setProfessionals(p);
+      setAppointments(a);
+      setProducts(prod);
+      setClients(c);
+      setExpenses(e);
+      setCurrentLogo(logo);
+      setIsLoadingAnalytics(false);
+    } catch (error) {
+      console.error("Error loading admin data:", error);
+    } finally {
+      setIsLoadingData(false);
+    }
   };
 
   // Analytics Logic
@@ -123,7 +140,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     const pieData = Object.entries(servicesCount).map(([name, value], index) => ({
       name,
       value,
-      percentage: (value / totalServices) * 100,
+      percentage: totalServices > 0 ? (value / totalServices) * 100 : 0,
       color: COLORS[index % COLORS.length]
     })).sort((a, b) => b.value - a.value);
 
@@ -228,15 +245,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     setIsGenerating(false);
   };
 
-  const handleSaveLogo = () => {
+  const handleSaveLogo = async () => {
     if (generatedLogo) {
-      storageService.saveLogo(generatedLogo);
+      await storageService.saveLogo(generatedLogo);
       setCurrentLogo(generatedLogo);
       alert("Logo atualizado com sucesso!");
     }
   };
 
-  const addService = () => {
+  const addService = async () => {
     if (!newService.name || !newService.price) return;
     const service: Service = {
       id: crypto.randomUUID(),
@@ -247,17 +264,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     };
     const updated = [...services, service];
     setServices(updated);
-    storageService.saveServices(updated);
+    await storageService.saveServices(updated);
     setNewService({ name: '', price: 0, duration: 30, description: '' });
   };
 
-  const removeService = (id: string) => {
+  const removeService = async (id: string) => {
     const updated = services.filter(s => s.id !== id);
     setServices(updated);
-    storageService.saveServices(updated);
+    await storageService.saveServices(updated);
   };
 
-  const addProfessional = () => {
+  const addProfessional = async () => {
     if (!newPro.name || !newPro.specialty) return;
     const pro: Professional = {
       id: crypto.randomUUID(),
@@ -268,23 +285,23 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     };
     const updated = [...professionals, pro];
     setProfessionals(updated);
-    storageService.saveProfessionals(updated);
+    await storageService.saveProfessionals(updated);
     setNewPro({ name: '', specialty: '', bio: '', avatarUrl: '' });
   };
 
-  const removeProfessional = (id: string) => {
+  const removeProfessional = async (id: string) => {
     const updated = professionals.filter(p => p.id !== id);
     setProfessionals(updated);
-    storageService.saveProfessionals(updated);
+    await storageService.saveProfessionals(updated);
   };
 
-  const removeAppointment = (id: string) => {
+  const removeAppointment = async (id: string) => {
     const updated = appointments.filter(a => a.id !== id);
     setAppointments(updated);
-    storageService.saveAppointments(updated);
+    await storageService.saveAppointments(updated);
   };
 
-  const addProduct = () => {
+  const addProduct = async () => {
     if (!newProduct.name || !newProduct.price) return;
     const product: Product = {
       id: crypto.randomUUID(),
@@ -296,17 +313,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     };
     const updated = [...products, product];
     setProducts(updated);
-    storageService.saveProducts(updated);
+    await storageService.saveProducts(updated);
     setNewProduct({ name: '', price: 0, stock: 0, description: '' });
   };
 
-  const removeProduct = (id: string) => {
+  const removeProduct = async (id: string) => {
     const updated = products.filter(p => p.id !== id);
     setProducts(updated);
-    storageService.saveProducts(updated);
+    await storageService.saveProducts(updated);
   };
 
-  const addExpense = () => {
+  const addExpense = async () => {
     if (!newExpense.description || !newExpense.amount) return;
     const expense: Expense = {
       id: crypto.randomUUID(),
@@ -317,14 +334,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     };
     const updated = [...expenses, expense];
     setExpenses(updated);
-    storageService.saveExpenses(updated);
+    await storageService.saveExpenses(updated);
     setNewExpense({ description: '', amount: 0, category: 'outros', date: new Date().toISOString().split('T')[0] });
   };
 
-  const removeExpense = (id: string) => {
+  const removeExpense = async (id: string) => {
     const updated = expenses.filter(e => e.id !== id);
     setExpenses(updated);
-    storageService.saveExpenses(updated);
+    await storageService.saveExpenses(updated);
   };
 
   // Confirmation Modal Handlers
@@ -332,17 +349,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     setDeleteModal({ isOpen: true, type, id, name });
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (deleteModal.type === 'service' && deleteModal.id) {
-      removeService(deleteModal.id);
+      await removeService(deleteModal.id);
     } else if (deleteModal.type === 'professional' && deleteModal.id) {
-      removeProfessional(deleteModal.id);
+      await removeProfessional(deleteModal.id);
     } else if (deleteModal.type === 'appointment' && deleteModal.id) {
-      removeAppointment(deleteModal.id);
+      await removeAppointment(deleteModal.id);
     } else if (deleteModal.type === 'product' && deleteModal.id) {
-      removeProduct(deleteModal.id);
+      await removeProduct(deleteModal.id);
     } else if (deleteModal.type === 'expense' && deleteModal.id) {
-      removeExpense(deleteModal.id);
+      await removeExpense(deleteModal.id);
     }
     setDeleteModal({ isOpen: false, type: null, id: null, name: '' });
   };
@@ -353,6 +370,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 
   const getServiceName = (id: string) => services.find(s => s.id === id)?.name || 'Desconhecido';
   const getProName = (id: string) => professionals.find(p => p.id === id)?.name || 'Desconhecido';
+
+  if (isLoadingData) {
+    return (
+      <div className="min-h-screen bg-zinc-900 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-12 h-12 text-barber-gold animate-spin" />
+          <p className="text-zinc-400">Carregando painel administrativo...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-zinc-900">
@@ -609,6 +637,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
           </div>
         )}
 
+        {/* FINANCIAL TAB */}
         {activeTab === 'financial' && (
           <div className="space-y-6">
             <h1 className="text-3xl font-bold text-white mb-6">Financeiro & Despesas</h1>

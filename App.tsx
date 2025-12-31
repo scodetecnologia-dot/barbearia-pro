@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Scissors, Lock, User, Settings } from 'lucide-react';
+import { Calendar, Scissors, Lock, User, Settings, Loader2 } from 'lucide-react';
 import BookingForm from './components/BookingForm';
 import AdminDashboard from './components/AdminDashboard';
 import ClientPortal from './components/ClientPortal';
@@ -11,12 +11,19 @@ const App = () => {
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
   const [adminPass, setAdminPass] = useState('');
   const [logo, setLogo] = useState<string | null>(null);
+  const [isLoadingLogo, setIsLoadingLogo] = useState(true);
 
   useEffect(() => {
-    // Refresh logo whenever we switch views
-    if (view === 'home') {
-      const savedLogo = storageService.getLogo();
+    // Refresh logo asynchronously
+    const fetchLogo = async () => {
+      setIsLoadingLogo(true);
+      const savedLogo = await storageService.getLogo();
       setLogo(savedLogo);
+      setIsLoadingLogo(false);
+    };
+
+    if (view === 'home') {
+      fetchLogo();
     }
   }, [view]);
 
@@ -46,7 +53,9 @@ const App = () => {
 
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 text-center">
         <div className="flex items-center justify-center w-32 h-32 rounded-full mb-6 shadow-[0_0_40px_rgba(212,175,55,0.2)] overflow-hidden border-4 border-barber-gold bg-black">
-          {logo ? (
+          {isLoadingLogo ? (
+            <Loader2 className="w-10 h-10 text-barber-gold animate-spin" />
+          ) : logo ? (
             <img src={logo} alt="BarberPro Elite Logo" className="w-full h-full object-cover" />
           ) : (
             <Scissors className="w-16 h-16 text-barber-gold" />
