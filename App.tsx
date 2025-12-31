@@ -39,55 +39,67 @@ const App = () => {
   };
 
   const renderHome = () => (
-    <div className="min-h-screen bg-zinc-950 bg-[url('https://images.unsplash.com/photo-1585747860715-2ba37e788b70?q=80&w=2074&auto=format&fit=crop')] bg-cover bg-center bg-no-repeat relative">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
+    <div className="min-h-screen bg-barber-900 flex items-center justify-center px-4 relative">
       
       {/* Admin Button (Gear) - Top Right */}
       <button 
         onClick={() => setIsAdminLoginOpen(true)}
-        className="absolute top-6 right-6 z-20 bg-black/50 hover:bg-barber-gold hover:text-black text-zinc-400 p-3 rounded-full transition-all backdrop-blur-md border border-zinc-700 group"
+        className="absolute top-6 right-6 z-20 text-zinc-600 hover:text-barber-gold p-2 transition-colors"
         title="Área Administrativa"
       >
-        <Settings className="w-6 h-6 group-hover:rotate-90 transition-transform duration-500" />
+        <Settings className="w-6 h-6" />
       </button>
 
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 text-center">
-        <div className="flex items-center justify-center w-32 h-32 rounded-full mb-6 shadow-[0_0_40px_rgba(212,175,55,0.2)] overflow-hidden border-4 border-barber-gold bg-black">
-          {isLoadingLogo ? (
-            <Loader2 className="w-10 h-10 text-barber-gold animate-spin" />
-          ) : logo ? (
-            <img src={logo} alt="BarberPro Elite Logo" className="w-full h-full object-cover" />
-          ) : (
-            <Scissors className="w-16 h-16 text-barber-gold" />
-          )}
-        </div>
-        <h1 className="text-5xl md:text-7xl font-bold text-white mb-4 tracking-tighter">
-          BARBER<span className="text-barber-gold">PRO</span> ELITE
-        </h1>
-        <p className="text-zinc-300 text-lg md:text-xl max-w-2xl mb-12">
-          Estilo clássico para o homem moderno. Acesse a área do cliente para benefícios exclusivos.
-        </p>
+      {/* Main Card */}
+      <div className="bg-barber-800 max-w-md w-full p-8 rounded-2xl shadow-2xl text-center border border-zinc-800 animate-in fade-in zoom-in duration-500">
         
-        <div className="flex flex-col md:flex-row gap-6 w-full max-w-md">
+        {/* Logo Section */}
+        <div className="flex justify-center mb-8">
+          <div className="w-24 h-24 rounded-full border-4 border-barber-gold overflow-hidden bg-black flex items-center justify-center shadow-[0_0_25px_rgba(212,175,55,0.2)]">
+            {isLoadingLogo ? (
+              <Loader2 className="w-8 h-8 text-barber-gold animate-spin" />
+            ) : logo ? (
+              <img src={logo} alt="BarberPro Elite Logo" className="w-full h-full object-cover" />
+            ) : (
+              <Scissors className="w-10 h-10 text-barber-gold" />
+            )}
+          </div>
+        </div>
+
+        <h1 className="text-4xl font-extrabold text-white tracking-tight mb-3">
+          BarberPro <span className="text-barber-gold">Elite</span>
+        </h1>
+
+        <p className="text-zinc-400 mb-10 leading-relaxed">
+          Sistema profissional de gestão e agendamento para o homem moderno.
+        </p>
+
+        <div className="space-y-4">
           <button 
             onClick={() => setView('client-portal')}
-            className="flex-1 bg-barber-gold hover:bg-barber-goldhover text-black font-bold py-4 rounded-xl text-lg transition-all transform hover:scale-105 flex items-center justify-center gap-2 shadow-lg shadow-barber-gold/20"
+            className="w-full py-4 rounded-xl bg-barber-gold hover:bg-barber-goldhover text-black font-bold text-lg transition-all transform hover:scale-[1.02] shadow-lg shadow-barber-gold/20 flex items-center justify-center gap-2"
           >
-            <User className="w-5 h-5" /> Área do Cliente
+            <User className="w-5 h-5" />
+            Entrar no Sistema
           </button>
-          
+
           <button 
             onClick={() => setView('booking')}
-            className="flex-1 bg-zinc-800/80 hover:bg-zinc-800 text-white font-bold py-4 rounded-xl text-lg transition-all backdrop-blur-md border border-zinc-700 flex items-center justify-center gap-2"
+            className="w-full py-4 rounded-xl border border-barber-gold text-barber-gold hover:bg-barber-gold hover:text-black font-bold text-lg transition-all flex items-center justify-center gap-2"
           >
-            <Calendar className="w-5 h-5" /> Agendar Avulso
+            <Calendar className="w-5 h-5" />
+            Agendar Horário
           </button>
         </div>
+
+        <footer className="mt-10 text-xs text-zinc-600 font-medium">
+          © 2025 BarberPro Elite • Todos os direitos reservados
+        </footer>
       </div>
 
       {/* Admin Login Modal */}
       {isAdminLoginOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm px-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm px-4 animate-in fade-in duration-200">
           <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-2xl w-full max-w-md shadow-2xl">
             <h2 className="text-2xl font-bold text-white mb-6 text-center">Acesso Administrativo</h2>
             <form onSubmit={handleAdminLogin} className="space-y-4">
