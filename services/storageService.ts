@@ -1,14 +1,13 @@
-import { Service, Professional, Appointment, Client, Product, Expense } from '../types';
+import { Service, Professional, Appointment, Client, Product, Expense, StorageProvider } from '../types';
 
 /**
  * DATABASE ABSTRACTION LAYER (Async Ready)
  * ------------------------------------------------------------------
- * Este serviço agora simula uma API assíncrona baseada em Promises.
- * Isso prepara o sistema para conectar com qualquer banco (Firebase, Supabase, Postgres).
+ * Current Adapter: LocalStorage (Simulated Async)
  * 
- * Para migrar para um banco real:
- * 1. Mantenha as assinaturas das funções (ex: async getServices(): Promise<Service[]>).
- * 2. Substitua o conteúdo 'localStorage' por 'fetch' ou chamadas de SDK do banco.
+ * Este serviço implementa a interface 'StorageProvider'.
+ * Para trocar de banco de dados, crie um novo arquivo (ex: firebaseStorage.ts)
+ * implementando a mesma interface e altere a importação no App.
  */
 
 const KEYS = {
@@ -65,7 +64,7 @@ const DEFAULT_PROFESSIONALS: Professional[] = [
   },
 ];
 
-export const storageService = {
+export const storageService: StorageProvider = {
   // Services
   getServices: async (): Promise<Service[]> => {
     await delay();
